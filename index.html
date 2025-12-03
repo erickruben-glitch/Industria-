@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Térmico Industrial BT</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Estilos CSS - Diseño Industrial Oscuro */
+        :root {
+            --bg-color: #1c2125;
+            --main-color: #00bcd4; /* Cian industrial */
+            --accent-color: #ff9800; /* Naranja de advertencia */
+            --text-color: #e0e0e0;
+            --card-bg: #2b3136;
+            --success-color: #4caf50;
+            --danger-color: #f44336;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace; /* Fuente de estilo industrial */
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        .container {
+            max-width: 1300px;
+            margin: auto;
+            background: var(--bg-color);
+            padding: 10px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: var(--main-color);
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--card-bg);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid var(--card-bg);
+            border-radius: 4px;
+            background-color: #22282c; /* Fondo de sección más claro que el body */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Conexión BT */
+        #connect-btn { 
+            padding: 12px 30px; 
+            font-size: 1.1em; 
+            background-color: var(--accent-color); 
+            color: var(--bg-color);
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: background-color 0.3s; 
+        }
+        #connect-btn:hover { background-color: #e68a00; }
+        #connection-status { margin-top: 10px; font-weight: bold; }
+
+        /* Termómetros Individuales */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            text-align: center;
+        }
+        .thermometer-container {
+            padding: 15px 5px;
+            border: 1px solid var(--card-bg);
+            border-left: 5px solid var(--main-color); /* Borde de énfasis */
+            border-radius: 4px;
+            background-color: var(--card-bg);
+        }
+        .label {
+            font-size: 0.9em;
+            color: var(--text-color);
+            text-transform: uppercase;
+            min-height: 40px; 
+        }
+        
+        /* Display Digital de Temperatura */
+        .digital-display {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--danger-color); /* Rojo para temperatura */
+            background-color: #111;
+            padding: 5px;
+            border-radius: 3px;
+            border: 1px solid var(--danger-color);
+        }
+        
+        /* Termómetro Visual (simulado con CSS) */
+        .thermometer-bar {
+            width: 10px;
+            height: 100px;
+            background-color: #333;
+            margin: 10px auto;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--text-color);
+        }
+        .mercury {
+            width: 100%;
+            background: var(--danger-color);
+            position: absolute;
+            bottom: 0;
+            transition: height 0.5s ease-out;
+        }
+
+        /* Temperatura Promedio (Dial/Gauge Simulado) */
+        .average-container {
+            text-align: center;
+            padding: 20px;
+        }
+        .gauge {
+            width: 200px;
+            height: 100px;
+            background: conic-gradient(var(--success-color) 0%, var(--success-color) 50%, var(--danger-color) 50%, var(--danger-color) 100%);
+            border-radius: 100px 100px 0 0;
+            position: relative;
+            overflow: hidden;
+            margin: 20px auto 0;
+            border-top: 5px solid var(--card-bg);
+        }
+        .gauge-mask {
+            width: 100px;
+            height: 50px;
+            background-color: var(--bg-color);
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            border-radius: 0 0 100px 100px;
+        }
+        .gauge-needle {
+            width: 100px;
+            height: 2px;
+            background-color: var(--accent-color);
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform-origin: 0% 100%;
+            transition: transform 0.5s ease-out;
+            border-radius: 50%;
+        }
+        #average-temp {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--success-color); 
+            margin-top: 10px;
+            display: block;
+        }
+
+
+        /* Control de Actuadores */
+        .actuator-control {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            margin-top: 20px;
+        }
+        .mode-selection button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            background-color: #3a424a;
+            color: var(--text-color);
+        }
+        .mode-selection .active { 
+            border: 2px solid var(--accent-color);
+            background-color: #4c555d;
+        }
+
+        .manual-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+            border: 1px dashed var(--main-color);
+            border-radius: 4px;
+            align-items: center;
+        }
+        .manual-buttons h4 { color: var(--main-color); margin-top: 0; }
+        .manual-buttons button {
+            padding: 8px 15px;
+            width: 120px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--bg-color);
+        }
+        .btn-on { background-color: var(--success-color); }
+        .btn-off { background-color: var(--danger-color); }
+        .manual-buttons button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Estado de Actuadores */
+        .status-indicator {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .indicator {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 120px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            text-transform: uppercase;
+        }
+        .status-ON { background-color: var(--success-color); color: var(--bg-color); }
+        .status-OFF { background-color: var(--danger-color); color: var(--bg-color); }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Panel de Control Térmico Industrial 🏭</h1>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="connectBluetooth()" id="connect-btn">
+                Conectar a ESP32 por Bluetooth
+            </button>
+            <div id="connection-status" style="color: var(--danger-color);">Desconectado</div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h2>Monitoreo de Sensores Dallas</h2>
+            <div class="sensor-grid" id="sensor-readings">
+                </div>
+            
+            <hr style="border-color: #3a424a;">
+            
+            <h2>Temperatura Promedio General</h2>
+            <div class="average-container">
+                <div class="gauge-display-wrapper">
+                    <span id="average-temp">--°C</span>
+                    <div class="gauge" id="avg-gauge">
+                        <div class="gauge-needle" id="gauge-needle"></div>
+                        <div class="gauge-mask"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h2>Control de Actuadores</h2>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h3>Modo de Operación:</h3>
+                <div class="mode-selection">
+                    <button id="mode-auto" class="active">Automático</button>
+                    <button id="mode-manual">Manual</button>
+                </div>
+            </div>
+
+            <div class="actuator-control">
+                <div class="manual-buttons">
+                    <h4>VENTILADOR</h4>
+                    <button class="btn-on" id="fan-on" onclick="setManualActuator('fan', 'ON')">Encender</button>
+                    <button class="btn-off" id="fan-off" onclick="setManualActuator('fan', 'OFF')">Apagar</button>
+                </div>
+
+                <div class="manual-buttons">
+                    <h4>CALEFACCIÓN</h4>
+                    <button class="btn-on" id="heat-on" onclick="setManualActuator('heat', 'ON')">Encender</button>
+                    <button class="btn-off" id="heat-off" onclick="setManualActuator('heat', 'OFF')">Apagar</button>
+                </div>
+            </div>
+
+            <div class="status-indicator">
+                <hr style="border-color: #3a424a;">
+                <h3>Estado de Salida</h3>
+                <div class="indicator status-OFF" id="fan-status">Ventilador: OFF</div>
+                <div class="indicator status-OFF" id="heat-status">Calefacción: OFF</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Etiquetas para los sensores
+        const SENSOR_LABELS = [
+            "MOTOR PRINCIPAL", 
+            "CUARTO DE MÁQUINAS", 
+            "CUARTO DE BOMBAS", 
+            "CUARTO DE COMUNICACIÓN"
+        ];
+        
+        // Estado inicial
+        let sensorTemperatures = [0.0, 0.0, 0.0, 0.0]; 
+        let operatingMode = 'auto'; 
+        let actuatorStatus = { fan: 'OFF', heat: 'OFF' };
+        
+        // --- Web Bluetooth Variables ---
+        let device;
+        let characteristicRX; 
+        const SERVICE_UUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; 
+        const CHARACTERISTIC_UUID_RX = '0000ffe1-0000-1000-8000-00805f9b34fb'; 
+        
+        // --- Constantes para visualización ---
+        const MIN_TEMP_GAUGE = 15; // Rango mínimo del dial
+        const MAX_TEMP_GAUGE = 30; // Rango máximo del dial
+
+        // ---------------------------------------------------
+        // 1. FUNCIONES BLUETOOTH (Sin cambios en la lógica)
+        // ---------------------------------------------------
+
+        async function connectBluetooth() {
+            // Lógica de conexión Bluetooth...
+            try {
+                document.getElementById('connection-status').textContent = "Buscando dispositivo...";
+                document.getElementById('connection-status').style.color = "var(--accent-color)"; 
+
+                device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [SERVICE_UUID] }],
+                    optionalServices: [SERVICE_UUID]
+                });
+                
+                device.addEventListener('gattserverdisconnected', onDisconnected);
+
+                const server = await device.gatt.connect();
+                const primaryService = await server.getPrimaryService(SERVICE_UUID);
+
+                characteristicRX = await primaryService.getCharacteristic(CHARACTERISTIC_UUID_RX);
+                characteristicRX.addEventListener('characteristicvaluechanged', handleSensorData);
+                await characteristicRX.startNotifications();
+                
+                document.getElementById('connection-status').textContent = "CONECTADO: " + device.name;
+                document.getElementById('connection-status').style.color = "var(--success-color)";
+                alert("Conexión Bluetooth exitosa con el ESP32.");
+
+            } catch (error) {
+                console.error('Error al conectar Bluetooth:', error);
+                document.getElementById('connection-status').textContent = "DESCONECTADO";
+                document.getElementById('connection-status').style.color = "var(--danger-color)"; 
+                alert('Error de conexión. Asegúrate de que el ESP32 esté encendido y Web Bluetooth esté disponible.');
+            }
+        }
+
+        function onDisconnected(event) {
+            console.log('Dispositivo desconectado: ' + event.target.name);
+            alert('¡El ESP32 se ha desconectado!');
+            document.getElementById('connection-status').textContent = "DESCONECTADO";
+            document.getElementById('connection-status').style.color = "var(--danger-color)"; 
+        }
+
+        function handleSensorData(event) {
+            const value = event.target.value;
+            const decoder = new TextDecoder('utf-8');
+            const dataString = decoder.decode(value).trim();
+            
+            const temps = dataString.split(',').map(s => parseFloat(s.trim()));
+
+            if (temps.length === 4 && !temps.includes(NaN)) {
+                sensorTemperatures = temps;
+                updateSensorDisplay();
+            } else {
+                console.warn("Datos de temperatura inválidos recibidos:", dataString);
+            }
+        }
+        
+        async function sendCommand(command) {
+            if (!characteristicRX) return;
+            try {
+                const encoder = new TextEncoder('utf-8');
+                await characteristicRX.writeValue(encoder.encode(command + '\n')); 
+                console.log('Comando enviado:', command);
+            } catch (error) {
+                console.error('Error al enviar comando:', error);
+            }
+        }
+
+
+        // ---------------------------------------------------
+        // 2. LÓGICA DE VISUALIZACIÓN (MODIFICADA)
+        // ---------------------------------------------------
+        
+        function initializeSensors() {
+            const container = document.getElementById('sensor-readings');
+            container.innerHTML = '';
+            SENSOR_LABELS.forEach((label, index) => {
+                const tempContainer = document.createElement('div');
+                tempContainer.className = 'thermometer-container';
+                // Estructura con display numérico y termómetro de barra simulado
+                tempContainer.innerHTML = `
+                    <div class="label">${label}</div>
+                    <div class="digital-display" id="temp-s${index + 1}">--°C</div>
+                    <div class="thermometer-bar">
+                        <div class="mercury" id="mercury-s${index + 1}" style="height: 0%;"></div>
+                    </div>
+                `;
+                container.appendChild(tempContainer);
+            });
+            updateSensorDisplay();
+        }
+
+        function calculateAverage() {
+            const sum = sensorTemperatures.reduce((a, b) => a + b, 0);
+            return sum / sensorTemperatures.length;
+        }
+
+        function updateSensorDisplay() {
+            const average = calculateAverage();
+            
+            sensorTemperatures.forEach((temp, index) => {
+                const tempElement = document.getElementById(`temp-s${index + 1}`);
+                const mercuryElement = document.getElementById(`mercury-s${index + 1}`);
+                
+                tempElement.textContent = `${temp.toFixed(1)}°C`;
+                
+                // Actualizar Termómetro de Barra (simulado)
+                let percent = ((temp - 10) / (35 - 10)) * 100; // Normalizar entre 10°C (0%) y 35°C (100%)
+                if (percent < 0) percent = 0;
+                if (percent > 100) percent = 100;
+                mercuryElement.style.height = `${percent}%`;
+            });
+
+            // Actualizar Promedio y Dial/Gauge
+            document.getElementById('average-temp').textContent = `${average.toFixed(1)}°C`;
+            updateGauge(average);
+
+            if (operatingMode === 'auto') {
+                autoControlActuators(average);
+            }
+            
+            updateActuatorStatusDisplay();
+        }
+        
+        // Función para mover la aguja del Dial/Gauge
+        function updateGauge(temp) {
+            const needle = document.getElementById('gauge-needle');
+            
+            // 1. Normalizar la temperatura en el rango [MIN_TEMP_GAUGE, MAX_TEMP_GAUGE]
+            let normalized = (temp - MIN_TEMP_GAUGE) / (MAX_TEMP_GAUGE - MIN_TEMP_GAUGE);
+            
+            // 2. Limitar el valor entre 0 y 1 para evitar que la aguja se salga
+            if (normalized < 0) normalized = 0;
+            if (normalized > 1) normalized = 1;
+            
+            // 3. Mapear el valor normalizado (0 a 1) al ángulo (0 a 180 grados)
+            // La aguja inicia a 0 grados (extremo izquierdo, 15°C) y va hasta 180 grados (extremo derecho, 30°C)
+            const angle = normalized * 180;
+            
+            // Aplicar la rotación (La aguja está dibujada horizontalmente en el CSS, por lo que rotamos desde la vertical)
+            // Se resta 90 grados para que el 0% sea a 0 grados y el 100% sea a 180 grados en la media luna.
+            needle.style.transform = `rotate(${angle - 90}deg)`;
+        }
+
+        // ---------------------------------------------------
+        // 3. LÓGICA DE CONTROL (Mantiene las funciones)
+        // ---------------------------------------------------
+
+        function autoControlActuators(temp) {
+            let fanState = 'OFF';
+            let heatState = 'OFF';
+            
+            // Reglas de control automático (basado en Promedio)
+            if (temp >= 25) { 
+                fanState = 'ON';
+                heatState = 'OFF';
+            } else if (temp >= 21 && temp <= 24) { 
+                fanState = 'OFF';
+                heatState = 'OFF';
+            } else if (temp >= 15 && temp <= 20) { 
+                fanState = 'OFF';
+                heatState = 'ON';
+            }
+            
+            // Actualiza el estado esperado en la interfaz
+            actuatorStatus.fan = fanState;
+            actuatorStatus.heat = heatState;
+        }
+
+        // Event Listeners y funciones de Modo (sin cambios)
+        document.getElementById('mode-auto').addEventListener('click', () => setOperatingMode('auto'));
+        document.getElementById('mode-manual').addEventListener('click', () => setOperatingMode('manual'));
+
+        function setOperatingMode(mode) {
+            operatingMode = mode;
+            document.getElementById('mode-auto').classList.toggle('active', mode === 'auto');
+            document.getElementById('mode-manual').classList.toggle('active', mode === 'manual');
+            
+            toggleManualButtons(mode === 'auto'); 
+            
+            if (mode === 'auto') {
+                autoControlActuators(calculateAverage());
+            }
+            updateActuatorStatusDisplay();
+        }
+        
+        function toggleManualButtons(disable) {
+            // Deshabilita/Habilita botones manuales
+            document.getElementById('fan-on').disabled = disable;
+            document.getElementById('fan-off').disabled = disable;
+            document.getElementById('heat-on').disabled = disable;
+            document.getElementById('heat-off').disabled = disable;
+        }
+
+        function setManualActuator(actuator, state) {
+            if (operatingMode === 'manual') {
+                actuatorStatus[actuator] = state;
+                updateActuatorStatusDisplay();
+                
+                // **Enviar comando al ESP32 por Bluetooth**
+                const command = `${actuator.toUpperCase()}_${sta
